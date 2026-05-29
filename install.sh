@@ -43,6 +43,10 @@ echo
 echo "Branch naming: ticket names like FOO-123 become <prefix>FOO-123."
 prefix=$(ask "Branch prefix (blank for none)" "feature/")
 base_override=$(ask "Default base branch (blank = auto-detect each time)" "")
+echo
+echo "Pane agent: what runs in the new pane — 'auto' launches the agent that"
+echo "opened it (Claude/Kiro/Codex...), 'none' opens a shell, or a custom command."
+agent=$(ask "Pane agent (auto/none/command)" "auto")
 
 # --- write config ---
 mkdir -p "$CONFIG_DIR"
@@ -52,6 +56,7 @@ mkdir -p "$CONFIG_DIR"
   echo "WORKTREE_PANE_ROOT=$wt_root"
   echo "WORKTREE_PANE_BRANCH_PREFIX=$prefix"
   echo "WORKTREE_PANE_BASE=$base_override"
+  echo "WORKTREE_PANE_AGENT=$agent"
 } > "$CONFIG_FILE"
 chmod +x "$SCRIPT" 2>/dev/null || true
 echo

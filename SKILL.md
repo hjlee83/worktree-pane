@@ -1,11 +1,14 @@
 ---
 name: worktree-pane
 description: >-
-  Create a git worktree for a ticket or branch and open it in a new terminal
-  pane (tmux or cmux). Use when the user asks to make/open a worktree — e.g.
+  Create, open, or pick a git worktree and show it in a new terminal pane
+  (tmux or cmux). Use when the user asks to make/open a worktree — e.g.
   "SELLERSYS-1234 워크트리 만들어줘", "open a worktree for FOO-12",
-  "<ticket> 워크트리를 새 pane 에 띄워줘". Portable and zero-config: every
-  default is auto-detected and overridable.
+  "<ticket> 워크트리를 새 pane 에 띄워줘" — OR to list/pick an existing one —
+  e.g. "워크트리 보여줘", "워크트리 목록", "어떤 워크트리 열까", "show
+  worktrees", "switch worktree" — OR to close/remove one — e.g. "워크트리
+  종료해줘", "워크트리 삭제", "이 워크트리 닫아줘", "remove worktree". Portable
+  and zero-config: every default is auto-detected and overridable.
 ---
 
 # worktree-pane
@@ -46,6 +49,51 @@ the same Q&A with `read` prompts. The skill works **without** any config too —
 the script falls back to the same auto-detected defaults — so if the user just
 wants it done now, skip setup and run the script directly.
 
+## Listing & picking a worktree
+
+When the user asks to **see / list / pick** a worktree — e.g. "워크트리 보여줘",
+"워크트리 목록", "어떤 워크트리 열까", "show worktrees", "switch worktree" —
+present a radio picker and open the chosen one:
+
+1. Get the list (machine-readable, one `path<TAB>branch` per line):
+   ```bash
+   bash "<skill-dir>/scripts/worktree-pane.sh" --list
+   ```
+   This already excludes the main checkout and temporary `worktree-*` ones. Add
+   `--all` only if the user explicitly wants the temporary/agent worktrees too.
+2. Present the results with **AskUserQuestion** (single-select = a radio): use
+   the **branch** as each option label and the **path** as the description.
+3. AskUserQuestion allows **at most 4 options**. If `--list` returns more,
+   show the first 4 and rely on the auto-provided "Other" so the user can type
+   a ticket/name directly; mention how many were omitted.
+4. If the list is empty, say so and offer to create one instead.
+5. On selection, open/focus that worktree by passing its **path** (bare-path
+   mode focuses an already-open pane or opens a new one):
+   ```bash
+   bash "<skill-dir>/scripts/worktree-pane.sh" "<selected-path>"
+   ```
+
+## Removing / closing a worktree
+
+When the user asks to **close / remove / 종료 / 삭제** a worktree:
+
+1. If they didn't name one, show the `--list` radio (as above) to pick the
+   target.
+2. Remove it (keeps the branch, closes its pane):
+   ```bash
+   bash "<skill-dir>/scripts/worktree-pane.sh" --remove "<ticket-or-path>"
+   ```
+3. If the worktree has uncommitted changes, the script prints
+   `WORKTREE_PANE_NEEDS_FORCE ...` and exits 3 instead of deleting. Surface that
+   to the user (they have unsaved work), and only if they confirm, re-run with
+   `--force`:
+   ```bash
+   bash "<skill-dir>/scripts/worktree-pane.sh" --remove "<ticket-or-path>" --force
+   ```
+
+Removal keeps the local branch by design — never delete the branch unless the
+user explicitly asks.
+
 ## Normal invocation
 
 Run the bundled script with the ticket/name the user gave:
@@ -63,6 +111,14 @@ bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET-OR-NAME>
   session/window) it just focuses that pane instead of making a new one.
 - The pane carries the worktree name: cmux renames the tab, tmux renames the
   window the new split pane lives in.
+- **Agent autostart:** by default (`WORKTREE_PANE_AGENT=auto`) the new pane
+  launches the agent that invoked the skill — detected from `$AI_AGENT` /
+  `$CLAUDECODE`, which are present because the script runs inside that agent's
+  shell. So a Claude-triggered worktree opens a pane already running `claude`;
+  Kiro → `kiro`, etc. When focusing an already-open pane whose agent has exited,
+  it is relaunched. Pass `--agent none` if the user only wants a shell, or
+  `--agent "<command>"` to run something specific. This starts a **fresh** agent
+  session in the worktree (a new context, not this conversation).
 
 ### Branch resolution (handled by the script — don't pre-empt it)
 

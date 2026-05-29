@@ -72,6 +72,11 @@ Given a ticket like `FOO-1234`:
    the window the pane lives in).
 4. If a pane for that worktree is already open **anywhere** — any cmux
    workspace, any tmux session/window — just focus it instead of duplicating.
+5. **Launch the agent in the pane.** With `WORKTREE_PANE_AGENT=auto` (default)
+   the pane starts the same agent that invoked the skill — Claude opens a new
+   pane already running `claude`, Kiro runs `kiro`, etc. (detected via
+   `$AI_AGENT` / `$CLAUDECODE`). When you jump to an already-open pane whose
+   agent has since exited, it is relaunched. Set `none` for a plain shell.
 
 ### Branch resolution
 
@@ -97,13 +102,17 @@ Optional. Lives at `~/.config/worktree-pane/config.env` (or set
 | `WORKTREE_PANE_ROOT` | `.claude/worktrees` | worktree dir, repo-relative or absolute |
 | `WORKTREE_PANE_BRANCH_PREFIX` | `feature/` | prefix for ticket branches; blank = none |
 | `WORKTREE_PANE_BASE` | *(empty)* | default base branch; blank = auto-detect |
+| `WORKTREE_PANE_AGENT` | `auto` | what to run in the pane: `auto` (the invoking agent) / `none` (shell) / a command |
 
 ## Commands
 
 ```bash
 worktree-pane <ticket-or-name> [--base <branch>] [--branch <branch>] \
-              [--root <dir>] [--mux auto|tmux|cmux|none] [-y|--create-new]
-worktree-pane /abs/path/to/worktree     # bare-path mode
+              [--root <dir>] [--mux auto|tmux|cmux|none] \
+              [--agent auto|none|<command>] [-y|--create-new]
+worktree-pane /abs/path/to/worktree         # bare-path mode
+worktree-pane --list [--all]                # list worktrees (path<TAB>branch)
+worktree-pane --remove <ticket-or-path> [--force]   # remove worktree + close pane
 ```
 
 | Flag | Meaning |
@@ -112,7 +121,10 @@ worktree-pane /abs/path/to/worktree     # bare-path mode
 | `--branch <branch>` | override the derived branch name |
 | `--root <dir>` | worktree directory (repo-relative or absolute) |
 | `--mux <m>` | force `auto` / `tmux` / `cmux` / `none` |
+| `--agent <a>` | what to run in the pane: `auto` / `none` / a command |
 | `-y`, `--create-new` | allow creating a new branch without prompting |
+| `--list` `[--all]` | print worktrees (skips temp ones unless `--all`) |
+| `--remove` `[--force]` | remove a worktree + close its pane (keeps the branch) |
 
 Examples:
 
