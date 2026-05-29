@@ -52,8 +52,14 @@ wants it done now, skip setup and run the script directly.
 ## Listing & picking a worktree
 
 When the user asks to **see / list / pick** a worktree — e.g. "워크트리 보여줘",
-"워크트리 목록", "어떤 워크트리 열까", "show worktrees", "switch worktree" —
-present a radio picker and open the chosen one:
+"워크트리 목록 보여줘", "워크트리 목록", "어떤 워크트리 열까", "show
+worktrees", "switch worktree" — present a radio picker and open the chosen one.
+
+> **ALWAYS present the result through AskUserQuestion (a radio).** This holds
+> for every phrasing, including "목록 보여줘" / "list" — those still mean "let me
+> pick one to open", not "print a table". **Do NOT** answer with a Markdown
+> table or a bulleted list of worktrees; that dead-ends the user. The only time
+> you skip the radio is when the list is empty (step 4).
 
 1. Get the list (machine-readable, one `path<TAB>branch` per line):
    ```bash
