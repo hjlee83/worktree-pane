@@ -354,8 +354,13 @@ if [ ! -d "$wt" ]; then
   if git -C "$gitdir" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
     echo "worktree-pane: checking out existing local branch '$branch'"
     git -C "$gitdir" worktree add "$wt" "$branch"
-  elif git -C "$gitdir" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
+  elif git -C "$gitdir" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null \
+       || [ -n "$(git -C "$gitdir" ls-remote --heads origin "$branch" 2>/dev/null)" ]; then
+    # Remote branch exists — locally tracked, OR present on the remote but not
+    # fetched yet (e.g. someone just pushed it). Fetch so origin/<branch>
+    # resolves, then create a tracking worktree to continue that work.
     echo "worktree-pane: tracking remote 'origin/$branch'"
+    git -C "$gitdir" fetch -q origin "$branch" 2>/dev/null || true
     git -C "$gitdir" worktree add "$wt" -b "$branch" "origin/$branch"
   else
     if [ -z "$base" ]; then
