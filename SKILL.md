@@ -49,6 +49,48 @@ the same Q&A with `read` prompts. The skill works **without** any config too —
 the script falls back to the same auto-detected defaults — so if the user just
 wants it done now, skip setup and run the script directly.
 
+## Choosing where to open (pane 선택)
+
+Before opening a worktree — both in normal invocation and after a pick from
+the list — ask **where** the user wants to work, unless they already said so.
+One question (AskUserQuestion, single-select):
+
+- **새 pane 에서 열기 (Recommended)** — current behavior: run the script with
+  the default mux → split pane + tab rename + agent autostart.
+- **현재 pane 에서 새 세션으로 시작** — run the script with `--mux none`, then
+  guide the user (the assistant cannot do this itself — the pane is occupied by
+  the current session):
+  - quickest: type `/clear`, then tell the fresh session
+    "`<worktree-path>` 에서 작업해줘" (a cleared session starts from the
+    original launch directory, so it must be pointed at the worktree);
+  - fully clean: `exit`, then `cd <worktree-path> && claude`.
+  - Getting back: sessions are grouped by the directory `claude` was launched
+    from, so to return to the previous session later, `cd` back to the main
+    checkout first, then `claude --continue` (most recent) or `claude --resume`
+    (picker); after `/clear`, use `/resume` in the same pane. Session history
+    survives worktree removal.
+
+**Skip the question entirely when:**
+
+- The user already stated a location — "새 pane 에 열어줘" / "split 으로 띄워줘"
+  → new pane; "현재 pane 에서 새 세션으로" → current-pane new session.
+- No multiplexer is available (mux resolves to `none`) — a new pane is
+  impossible, so every open is inherently a current-pane situation: run the
+  script normally (no `--mux none` needed; auto resolves to none) and then give
+  the **same guidance as the current-pane new-session option above** (`/clear`
+  path, `exit && claude` path, how to get back).
+
+**Explicit-request-only modes (never offered in the question):**
+
+- "이 세션에서 (이어서) 작업해줘" → run with `--mux none`, then do the worktree
+  work in this session **without ever `cd`-ing into it**: the session's CWD
+  stays at the main checkout, and every worktree operation uses absolute paths
+  and `git -C <worktree-path>`. This keeps the session uncontaminated — no
+  stale-CWD confusion, no deleting the directory the session sits in — and
+  makes it visible per command which tree is being touched.
+- "워크트리만 만들어줘" / "준비만 해줘" → run with `--mux none`, report the
+  path with a `cd <path>` hint, and stop.
+
 ## Listing & picking a worktree
 
 When the user asks to **see / list / pick** a worktree — e.g. "워크트리 보여줘",
@@ -73,15 +115,24 @@ worktrees", "switch worktree" — present a radio picker and open the chosen one
    show the first 4 and rely on the auto-provided "Other" so the user can type
    a ticket/name directly; mention how many were omitted.
 4. If the list is empty, say so and offer to create one instead.
-5. On selection, open/focus that worktree by passing its **path** (bare-path
-   mode focuses an already-open pane or opens a new one):
+5. On selection, first run the **"Choosing where to open"** flow above, then
+   open/focus that worktree by passing its **path** (bare-path mode focuses an
+   already-open pane or opens a new one; add `--mux none` for current-pane
+   mode):
    ```bash
    bash "<skill-dir>/scripts/worktree-pane.sh" "<selected-path>"
    ```
 
-## Removing / closing a worktree
+## Removing a worktree (삭제)
 
-When the user asks to **close / remove / 종료 / 삭제** a worktree:
+When the user asks to **remove / delete / 삭제** a worktree. Removal deletes
+the worktree **directory** (and closes its pane); the branch is kept.
+
+> **Ambiguous wording — confirm first.** "종료" / "닫아줘" / "close" can mean
+> either "just close the pane" or "delete the worktree". Those words alone do
+> NOT authorize deletion — ask which one the user means before running
+> `--remove`. Only explicit deletion words (삭제 / remove / delete / 지워줘)
+> skip that question.
 
 1. If they didn't name one, show the `--list` radio (as above) to pick the
    target.
@@ -100,9 +151,16 @@ When the user asks to **close / remove / 종료 / 삭제** a worktree:
 Removal keeps the local branch by design — never delete the branch unless the
 user explicitly asks.
 
+> **CWD sanity check:** the session should never be `cd`-ed into a worktree
+> (see the no-cd rule in "Choosing where to open"), but verify with `pwd`
+> before `--remove` anyway — if the CWD is somehow inside the target worktree,
+> `cd` back to the main checkout first so the directory isn't deleted out from
+> under the session.
+
 ## Normal invocation
 
-Run the bundled script with the ticket/name the user gave:
+First run the **"Choosing where to open"** flow above (unless the user already
+said where), then run the bundled script with the ticket/name the user gave:
 
 ```bash
 bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET-OR-NAME>
@@ -161,4 +219,5 @@ If the user declines, stop — create nothing.
 Report concisely: the worktree path, the branch, which of the three modes
 fired (new / local checkout / remote tracking), and that the pane opened (or
 was already open). If `mux` resolved to `none`, tell the user to `cd` into the
-printed path.
+printed path. In current-pane mode ("이 세션이 워크트리에서 계속 작업"), state
+the worktree path and that this session is now working inside it.

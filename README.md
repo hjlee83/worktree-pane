@@ -26,6 +26,15 @@ Inside Claude Code you don't type the command — just say:
 > SELLERSYS-1234 워크트리 만들어줘
 > open a worktree for FOO-12
 
+Claude then asks **where** to open it — a **new pane** (recommended) or a
+**fresh session in the current pane** (no pane: the worktree is prepared and
+you get the exact steps to start a clean `claude` there, plus how to resume
+the previous session later). State the location up front ("새 pane 에 열어줘",
+"open it in a new pane") to skip the question. To avoid surprises, ambiguous
+words like "종료"/"close" make Claude confirm whether you mean *closing the
+pane* or *deleting the worktree* — only explicit deletion words (삭제 /
+remove / delete) go straight to removal.
+
 ## Installation
 
 ### Option A — Claude Code skill (recommended)
