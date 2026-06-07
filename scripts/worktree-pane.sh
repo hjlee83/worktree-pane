@@ -394,7 +394,11 @@ if [ ! -d "$wt" ]; then
       fi
     fi
     echo "worktree-pane: creating '$branch' from '$base_ref'"
-    git -C "$gitdir" worktree add "$wt" -b "$branch" "$base_ref"
+    # --no-track: a brand-new feature branch must not inherit the base as its
+    # upstream (else `git pull` would merge e.g. master into it, and merge-state
+    # detection misreads it). The user sets the real upstream later via
+    # `git push -u origin <branch>`.
+    git -C "$gitdir" worktree add "$wt" --no-track -b "$branch" "$base_ref"
   fi
 else
   echo "worktree-pane: worktree already exists at $wt"
