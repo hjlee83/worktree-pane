@@ -325,9 +325,26 @@ EOF
   esac
 }
 
+# True only when $1 is the ROOT of its own git worktree. Guards against the
+# silent fallback where `git -C <dir>` on an orphan/stray directory walks up to
+# an ancestor repo (e.g. the main checkout) and operates on THAT instead — so a
+# `git -C "$wt" status` could read the main repo's state by mistake.
+is_worktree_root() {
+  local d top
+  d=$(cd "$1" 2>/dev/null && pwd -P) || return 1
+  top=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || return 1
+  [ "$top" = "$d" ]
+}
+
 # ---------- remove mode ----------
 do_remove() {
   [ -d "$wt" ] || { echo "worktree-pane: no worktree at $wt" >&2; exit 1; }
+  if ! is_worktree_root "$wt"; then
+    echo "worktree-pane: '$wt' is not a registered worktree root (orphan/stray dir?) —" >&2
+    echo "  refusing to operate so we don't touch the main repo by fallback. Nothing changed." >&2
+    echo "  If it's a stray directory, remove it manually; for missing-but-registered ones run 'git worktree prune'." >&2
+    exit 1
+  fi
   if [ "$force" -ne 1 ] && [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
     if [ -t 0 ]; then
       printf "worktree-pane: '%s' has uncommitted changes. Remove anyway? [y/N] " "$label" >&2

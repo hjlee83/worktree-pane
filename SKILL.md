@@ -88,6 +88,11 @@ One question (AskUserQuestion, single-select):
   and `git -C <worktree-path>`. This keeps the session uncontaminated — no
   stale-CWD confusion, no deleting the directory the session sits in — and
   makes it visible per command which tree is being touched.
+  - **Guard before any `git -C <path>`:** confirm the path is the worktree's
+    own root — `git -C "<path>" rev-parse --show-toplevel` must equal `<path>`.
+    If it doesn't (orphan/stray dir), `git` silently walked up to an ancestor
+    repo and your command would hit the **main checkout** instead. Stop and
+    report; never write to a path that fails this check.
 - "워크트리만 만들어줘" / "준비만 해줘" → run with `--mux none`, report the
   path with a `cd <path>` hint, and stop.
 
