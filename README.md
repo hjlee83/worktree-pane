@@ -147,6 +147,32 @@ worktree-pane sellersys-1234            # auto-uppercased
 worktree-pane spike-cache --branch spike/cache   # non-ticket name + explicit branch
 ```
 
+### Cleaning up finished worktrees
+
+`--stale` classifies worktrees so you can see which are safe to delete. It only
+reads — nothing is removed until you call `--remove`. Run `git fetch --prune`
+first so merge/upstream state is accurate:
+
+```bash
+git fetch --prune
+worktree-pane --stale
+# completed   …/SELLERSYS-8116   feature/SELLERSYS-8116                  2 weeks ago   clean
+# gray        …/SPIKE-cache      spike/cache                             6 weeks ago   clean
+# active      …/SELLERSYS-9001   feature/SELLERSYS-9001                  2 days ago    dirty
+```
+
+- **completed** — merged into an integration branch, or its upstream is gone
+  (covers squash/rebase teams). Safe to delete.
+- **active** — recent, unmerged. Keep it.
+- **gray** — unmerged but older than `WORKTREE_PANE_STALE_DAYS` (default 14).
+  Could be on hold or abandoned — your call; never auto-deleted.
+
+Then delete the ones you chose (keeps the branch; `--force` if it's dirty):
+
+```bash
+worktree-pane --remove SELLERSYS-8116
+```
+
 ## Troubleshooting
 
 <details>
