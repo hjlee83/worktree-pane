@@ -33,7 +33,7 @@ branch=""
 create_new=0   # set by -y/--create-new to allow creating a brand-new branch non-interactively
 list_mode=0    # set by --list
 all=0          # set by --all (include temporary/agent worktrees in --list)
-remove_mode=0  # set by --remove/--close
+remove_mode=0  # set by --remove/--rm
 force=0        # set by --force (remove a dirty worktree without asking)
 agent="${WORKTREE_PANE_AGENT:-auto}"   # what to launch in the new pane: auto|none|<command>
 
@@ -49,10 +49,11 @@ Usage:
   worktree-pane --list [--all]              # list worktrees (TAB: path<TAB>branch)
   worktree-pane --remove <ticket-or-path> [--force]   # remove a worktree + close its pane
 
---remove deletes the worktree directory and closes its pane, keeping the branch.
-If the worktree has uncommitted changes it stops (interactively it prompts;
-non-interactively it prints "WORKTREE_PANE_NEEDS_FORCE ..." and exits 3) unless
---force is given.
+--remove (alias --rm) deletes the worktree directory and closes its pane,
+keeping the branch. If the worktree has uncommitted changes it stops
+(interactively it prompts; non-interactively it prints "WORKTREE_PANE_NEEDS_FORCE
+..." and exits 3) unless --force is given. --close is NOT an alias for this: it
+is non-destructive and refuses (close a pane via your multiplexer instead).
 
 --agent decides what runs in the pane: 'auto' (default) launches the agent that
 invoked this script (detected via $AI_AGENT / $CLAUDECODE), 'none' just opens a
@@ -86,7 +87,14 @@ while [ $# -gt 0 ]; do
     --agent)  agent="$2";  shift 2 ;;
     -y|--create-new) create_new=1; shift ;;
     --list|--ls) list_mode=1; shift ;;
-    --remove|--close|--rm) remove_mode=1; shift ;;
+    --remove|--rm) remove_mode=1; shift ;;
+    --close)
+      # 'close' is non-destructive elsewhere (close a pane / drop attention), so
+      # it must NOT delete a worktree. Refuse and point to the right action.
+      echo "worktree-pane: --close does not delete anything." >&2
+      echo "  To close a pane, use your multiplexer (cmux: close-surface, tmux: Ctrl-b x)." >&2
+      echo "  To delete the worktree directory, use --remove (keeps the branch)." >&2
+      exit 2 ;;
     --force) force=1; shift ;;
     --all) all=1; shift ;;
     -h|--help) usage; exit 0 ;;
