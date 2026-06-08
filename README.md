@@ -108,10 +108,10 @@ This repo is a Claude Code **plugin marketplace**. In Claude Code:
 
 ```text
 /plugin marketplace add hjlee83/worktree-pane
-/plugin install worktree-pane@hjlee-tools
+/plugin install worktree-pane@sellersys-tools
 ```
 
-Update later with `/plugin marketplace update hjlee-tools` (or it auto-updates
+Update later with `/plugin marketplace update sellersys-tools` (or it auto-updates
 at session start). Since the plugin pins no version, every pushed commit is the
 latest. Share just those two lines with your team.
 

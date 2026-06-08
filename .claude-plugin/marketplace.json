@@ -1,10 +1,10 @@
 {
-  "name": "hjlee-tools",
+  "name": "sellersys-tools",
   "owner": {
     "name": "hjlee83",
     "email": "hojin.lee@woowahan.com"
   },
-  "description": "hjlee's Claude Code tools",
+  "description": "SellerSys Claude Code tools",
   "plugins": [
     {
       "name": "worktree-pane",
