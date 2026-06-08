@@ -37,18 +37,31 @@ remove / delete) go straight to removal.
 
 ## Installation
 
-### Option A — Claude Code skill (recommended)
+### Option A — Claude Code plugin (recommended, for teams)
 
-Clone into your user skills directory so it works in every project:
+This repo is a Claude Code **plugin marketplace**. In Claude Code:
+
+```text
+/plugin marketplace add hjlee83/worktree-pane
+/plugin install worktree-pane@hjlee-tools
+```
+
+Update later with `/plugin marketplace update hjlee-tools` (or it auto-updates
+at session start). Since the plugin pins no version, every pushed commit is the
+latest. Share just those two lines with your team.
+
+### Option B — clone into your skills dir (single machine)
+
+A clone placed at `~/.claude/skills/<name>/` auto-loads next session as a
+plugin (`worktree-pane@skills-dir`):
 
 ```bash
 git clone https://github.com/hjlee83/worktree-pane.git ~/.claude/skills/worktree-pane
 ```
 
-On first use Claude runs a short Q&A to save your preferences. You can skip it
-and it still works with defaults.
+Update it with `git -C ~/.claude/skills/worktree-pane pull`.
 
-### Option B — terminal installer (Q&A)
+### Optional — config Q&A / shell alias
 
 ```bash
 bash ~/.claude/skills/worktree-pane/install.sh
@@ -56,11 +69,12 @@ bash ~/.claude/skills/worktree-pane/install.sh
 
 It detects your setup, asks 4 questions (each with a default — press Enter to
 accept), writes `~/.config/worktree-pane/config.env`, and can add a `wt` alias.
+The skill works without it (sensible defaults).
 
-### Option C — no install
+### No install — run the script directly
 
 ```bash
-bash ~/.claude/skills/worktree-pane/scripts/worktree-pane.sh FOO-1234
+bash <plugin-or-clone-dir>/skills/worktree-pane/scripts/worktree-pane.sh FOO-1234
 ```
 
 ### Requirements
@@ -207,13 +221,18 @@ still works but will open a new pane instead of focusing the existing one.
 
 ## Development
 
-The whole tool is one self-contained shell script — `scripts/worktree-pane.sh`
-— with no runtime dependency on personal dotfiles. `SKILL.md` is the Claude
-Code entry point; `install.sh` is the terminal Q&A installer.
+The whole tool is one self-contained shell script —
+`skills/worktree-pane/scripts/worktree-pane.sh` — with no runtime dependency on
+personal dotfiles. `skills/worktree-pane/SKILL.md` is the Claude Code entry
+point; `.claude-plugin/{plugin,marketplace}.json` make the repo an installable
+plugin marketplace; `install.sh` is the optional config Q&A. Design notes live
+in `docs/purpose-and-use-cases.md`.
 
 ```bash
-bash -n scripts/worktree-pane.sh        # syntax check
-bash scripts/worktree-pane.sh --help    # usage
+S=skills/worktree-pane/scripts/worktree-pane.sh
+bash -n "$S"            # syntax check
+bash "$S" --help        # usage
+claude plugin validate . --strict   # validate manifests
 ```
 
 ## License

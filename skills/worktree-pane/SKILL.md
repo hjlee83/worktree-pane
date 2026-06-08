@@ -19,8 +19,10 @@ real logic lives in the bundled script — your job is to map the user's request
 onto it and report the result.
 
 The script is at `scripts/worktree-pane.sh` **relative to this skill file**.
-Resolve the absolute path before running (the skill may be installed at user
-scope `~/.claude/skills/worktree-pane/` or project scope).
+Resolve the absolute path from this `SKILL.md`'s own directory before running —
+that works wherever it's installed (a plugin under the Claude plugins dir, a
+clone in `~/.claude/skills/worktree-pane/`, or project scope). Do not assume a
+fixed path.
 
 ## First run — interactive setup (Q&A)
 

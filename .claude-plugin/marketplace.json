@@ -1,0 +1,15 @@
+{
+  "name": "hjlee-tools",
+  "owner": {
+    "name": "hjlee83",
+    "email": "hojin.lee@woowahan.com"
+  },
+  "description": "hjlee's Claude Code tools",
+  "plugins": [
+    {
+      "name": "worktree-pane",
+      "source": ".",
+      "description": "Create, open, list, clean up, or remove git worktrees and show them in a new terminal pane (tmux or cmux)."
+    }
+  ]
+}

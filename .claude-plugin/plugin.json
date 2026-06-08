@@ -1,0 +1,11 @@
+{
+  "name": "worktree-pane",
+  "description": "Create, open, list, clean up, or remove git worktrees and show them in a new terminal pane (tmux or cmux). Portable and zero-config.",
+  "author": {
+    "name": "hjlee83",
+    "email": "hojin.lee@woowahan.com"
+  },
+  "homepage": "https://github.com/hjlee83/worktree-pane",
+  "repository": "https://github.com/hjlee83/worktree-pane",
+  "license": "MIT"
+}

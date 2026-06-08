@@ -6,8 +6,8 @@
 # `wt` shell alias so you can use it outside Claude too.
 set -eu
 
-SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCRIPT="$SKILL_DIR/scripts/worktree-pane.sh"
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$PLUGIN_DIR/skills/worktree-pane/scripts/worktree-pane.sh"
 CONFIG_DIR="$HOME/.config/worktree-pane"
 CONFIG_FILE="$CONFIG_DIR/config.env"
 
