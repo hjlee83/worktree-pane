@@ -376,16 +376,16 @@ canon_path() {
 }
 path_under() { case "$2" in "$1"/*) return 0 ;; *) return 1 ;; esac; }   # path_under <parent> <child>
 
-# Report an orphan and exit. $1=kind (prunable|stray-dir), $2=path. Interactive:
-# print the safe cleanup command. Non-interactive: machine marker for the caller.
+# Report a stray directory (exists, but not a git worktree — no .git, unregistered)
+# and exit. $1=kind (always 'stray-dir'), $2=path. Removing it is destructive
+# (rm -rf), so we never do it automatically — interactive prints the command;
+# non-interactive emits a machine marker for the caller to confirm.
+# (The 'prunable' case — registered but dir gone — is handled inline by pruning,
+# since that touches no files.)
 orphan_report() {
   if [ -t 0 ]; then
-    case "$1" in
-      prunable)  echo "worktree-pane: '$2' is registered but its directory is gone (orphan)." >&2
-                 echo "  Safe to clean the stale entry: git -C \"$gitdir\" worktree prune" >&2 ;;
-      stray-dir) echo "worktree-pane: '$2' is a stray directory (no .git, not a registered worktree)." >&2
-                 echo "  git can't remove it; if you're sure it's junk: rm -rf \"$2\"" >&2 ;;
-    esac
+    echo "worktree-pane: '$2' is a stray directory (no .git, not a registered worktree)." >&2
+    echo "  git can't remove it; if you're sure it's junk: rm -rf \"$2\"" >&2
   else
     echo "WORKTREE_PANE_ORPHAN kind='$1' worktree='$2'"
   fi
@@ -402,7 +402,15 @@ do_remove() {
   wt_root_abs=$(cd "$wt_root_abs" 2>/dev/null && pwd -P) || wt_root_abs=""
 
   if [ ! -d "$wt" ]; then
-    [ "$registered" -eq 1 ] && orphan_report prunable "$wt"   # registered but dir gone
+    if [ "$registered" -eq 1 ]; then
+      # Registered but the directory is gone. Pruning only drops stale admin
+      # entries for already-missing worktrees (no files touched), so it's safe
+      # to just do it rather than refuse.
+      echo "worktree-pane: '$wt' is registered but its directory is gone — pruning stale entries." >&2
+      git -C "$gitdir" worktree prune -v
+      echo "worktree-pane: pruned stale worktree entries — branch kept"
+      exit 0
+    fi
     echo "worktree-pane: no worktree at $wt" >&2; exit 1
   fi
   if ! is_worktree_root "$wt"; then
@@ -434,6 +442,7 @@ do_remove() {
   else
     git -C "$gitdir" worktree remove "$wt"
   fi
+  git -C "$gitdir" worktree prune   # tidy any other stale entries while we're here
   echo "worktree-pane: removed worktree '$label' ($wt) — branch kept"
 }
 
