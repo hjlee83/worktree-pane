@@ -8,6 +8,20 @@ pane** — works in both **tmux** and **cmux**, across every workspace/session.
 Built to run with as little setup as possible: use it as a Claude Code skill
 (just ask in natural language) or as a plain shell command.
 
+## Install (Claude Code)
+
+Run these two lines in Claude Code — then just talk to Claude
+("SELLERSYS-1234 워크트리 열어줘"):
+
+```text
+/plugin marketplace add hjlee83/worktree-pane
+/plugin install worktree-pane@sellersys-tools
+```
+
+Updates auto-apply at session start (or run
+`/plugin marketplace update sellersys-tools`). More options (single-machine
+clone, config Q&A) are in [Installation](#installation) below.
+
 ## Demo
 
 **Open** — opens a new pane, cd'd into the worktree, tab named after it. Re-run
