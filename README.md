@@ -10,15 +10,50 @@ Built to run with as little setup as possible: use it as a Claude Code skill
 
 ## Demo
 
+**Open** — opens a new pane, cd'd into the worktree, tab named after it. Re-run
+just focuses the existing pane (no duplicate):
+
 ```text
 $ worktree-pane SELLERSYS-1234
 worktree-pane: tracking remote 'origin/feature/SELLERSYS-1234'
 worktree-pane: opened surface:7 → SELLERSYS-1234 (~/proj/.claude/worktrees/SELLERSYS-1234)
-# → a new pane opens, already cd'd into the worktree, tab named "SELLERSYS-1234"
 
 $ worktree-pane SELLERSYS-1234        # run again
 worktree-pane: already open → focused surface:7 (SELLERSYS-1234)
-# → no duplicate; it just jumps to the existing pane
+```
+
+**Create a new branch** — picks the base from candidates (repo default,
+`develop`, and live worktree branches so an epic can parent its sub-tasks);
+the new branch doesn't track the base:
+
+```text
+$ worktree-pane SELLERSYS-9001 --base develop --create-new
+worktree-pane: creating 'feature/SELLERSYS-9001' from 'origin/develop'
+worktree-pane: opened surface:9 → SELLERSYS-9001 (~/proj/.claude/worktrees/SELLERSYS-9001)
+```
+
+**Don't fork the same ticket** — type a bare ticket and it finds an existing
+branch (any prefix/suffix, local or remote) instead of making a duplicate:
+
+```text
+$ worktree-pane SELLERSYS-8451
+worktree-pane: no exact branch 'feature/SELLERSYS-8451', but found existing branch(es) for SELLERSYS-8451:
+  1) feature/SELLERSYS-8451-distributed-lock-core
+  To use one:  worktree-pane <that-branch-name>
+  To create new 'feature/SELLERSYS-8451' anyway:  re-run with --create-new
+```
+
+**Clean up** — classify worktrees, then remove the ones you choose
+(read-only; deletion is a separate step that keeps the branch):
+
+```text
+$ git fetch --prune && worktree-pane --stale
+completed   ~/proj/.claude/worktrees/SELLERSYS-8116   feature/SELLERSYS-8116    4 days ago    clean
+completed   ~/proj/.claude/worktrees/SELLERSYS-8494   feature/SELLERSYS-8494    11 days ago   clean
+active      ~/proj/.claude/worktrees/SELLERSYS-7652   feature/SELLERSYS-7652    4 days ago    dirty
+
+$ worktree-pane --remove SELLERSYS-8116
+worktree-pane: removed worktree 'SELLERSYS-8116' (~/proj/.claude/worktrees/SELLERSYS-8116) — branch kept
 ```
 
 Inside Claude Code you don't type the command — just say:
