@@ -123,11 +123,18 @@ if [ "$list_mode" -eq 1 ]; then do_list; exit 0; fi
 
 [ -n "$name" ] || { usage; exit 1; }
 
-# --- normalize ticket-style names (PREFIX-123) to uppercase ---
+# --- normalize ticket-style names (PREFIX-123, optionally with a -suffix) ---
+# Matches SELLERSYS-8451 and SELLERSYS-8451-distributed-lock-core alike. Only the
+# PREFIX-NUM head is uppercased; any suffix is kept verbatim. ticket_id holds the
+# head so we can later find existing branches for the same ticket (anti-fork).
 is_ticket=0
-if printf '%s' "$name" | grep -Eq '^[A-Za-z]+-[0-9]+$'; then
-  name=$(printf '%s' "$name" | tr '[:lower:]' '[:upper:]')
+ticket_id=""
+if printf '%s' "$name" | grep -Eq '^[A-Za-z]+-[0-9]+([-_].*)?$'; then
   is_ticket=1
+  head=$(printf '%s' "$name" | grep -Eo '^[A-Za-z]+-[0-9]+')
+  rest=${name#"$head"}
+  ticket_id=$(printf '%s' "$head" | tr '[:lower:]' '[:upper:]')
+  name="${ticket_id}${rest}"
 fi
 
 # --- resolve worktree path + label ---
@@ -473,6 +480,32 @@ if [ ! -d "$wt" ]; then
     git -C "$gitdir" fetch -q origin "$branch" 2>/dev/null || true
     git -C "$gitdir" worktree add "$wt" -b "$branch" "origin/$branch"
   else
+    # (B) Anti-fork: no exact branch, but maybe one already exists for this
+    # ticket under a different prefix/suffix (e.g. typed SELLERSYS-8451, remote
+    # has feature/SELLERSYS-8451-distributed-lock-core). Find local+remote
+    # branches containing the ticket id and defer the choice — re-invoking with
+    # the chosen full branch name resolves cleanly via the exact-match paths
+    # above. --create-new skips this and forces a new branch.
+    if [ "$create_new" -ne 1 ] && [ -n "$ticket_id" ]; then
+      matches=$(
+        { git -C "$gitdir" for-each-ref --format='%(refname:short)' refs/heads 2>/dev/null
+          git -C "$gitdir" ls-remote --heads origin 2>/dev/null | sed 's@.*refs/heads/@@'
+        } | grep -E "${ticket_id}([^0-9]|\$)" | grep -vxF "$branch" | sort -u | paste -sd'|' -
+      )
+      if [ -n "$matches" ]; then
+        if [ -t 0 ]; then
+          echo "worktree-pane: no exact branch '$branch', but found existing branch(es) for $ticket_id:" >&2
+          i=0; IFS='|'; set -- $matches; unset IFS
+          for m in "$@"; do i=$((i+1)); printf "  %d) %s\n" "$i" "$m" >&2; done
+          echo "  To use one:  worktree-pane <that-branch-name>" >&2
+          echo "  To create new '$branch' anyway:  re-run with --create-new" >&2
+          exit 3
+        else
+          echo "WORKTREE_PANE_TICKET_MATCHES branch='$branch' ticket='$ticket_id' matches='$matches' worktree='$wt'"
+          exit 3
+        fi
+      fi
+    fi
     # Gather base candidates unless the user pinned one with --base.
     cands=""
     if [ -z "$base" ]; then

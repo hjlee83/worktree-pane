@@ -212,7 +212,33 @@ bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET-OR-NAME>
 2. Else remote `origin/<prefix><TICKET>` exists → create a tracking worktree
    to continue existing work — important so the same ticket doesn't fork
    (no questions).
-3. Else a brand-new branch is needed → **must be confirmed** (see below).
+3. Else, if a branch for the **same ticket id** exists under a different
+   prefix/suffix → the script defers (see "Existing branch for the ticket").
+4. Else a brand-new branch is needed → **must be confirmed** (see below).
+
+A suffixed ticket (`SELLERSYS-8451-distributed-lock-core`) is recognized too —
+the `<prefix>` is applied and only the `PREFIX-NUM` head is upper-cased.
+
+### Existing branch for the ticket (anti-fork)
+
+If no exact branch matches but one exists for the same ticket id, the script
+prints `WORKTREE_PANE_TICKET_MATCHES` and exits 3 instead of forking:
+
+```
+WORKTREE_PANE_TICKET_MATCHES branch='feature/SELLERSYS-8451' ticket='SELLERSYS-8451' matches='feature/SELLERSYS-8451-distributed-lock-core' worktree='/…'
+```
+
+- `matches` — `|`-separated existing branches (local + remote) for that ticket.
+- Present them to the user (radio ≤4 / table >4) **plus** a "create new
+  `<branch>` instead" option.
+- To **use an existing one**, re-invoke with that full branch name (it then
+  resolves via the local/remote exact-match paths, and the directory is named
+  after its basename):
+  ```bash
+  bash "<skill-dir>/scripts/worktree-pane.sh" feature/SELLERSYS-8451-distributed-lock-core
+  ```
+- To **create the new branch anyway**, re-invoke with `--create-new` (this
+  skips the match search) and proceed to base confirmation below.
 
 ### Confirming a new branch
 
