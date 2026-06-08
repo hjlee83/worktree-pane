@@ -1,14 +1,16 @@
 ---
 name: worktree-pane
 description: >-
-  Create, open, or pick a git worktree and show it in a new terminal pane
-  (tmux or cmux). Use when the user asks to make/open a worktree — e.g.
-  "SELLERSYS-1234 워크트리 만들어줘", "open a worktree for FOO-12",
-  "<ticket> 워크트리를 새 pane 에 띄워줘" — OR to list/pick an existing one —
-  e.g. "워크트리 보여줘", "워크트리 목록", "어떤 워크트리 열까", "show
-  worktrees", "switch worktree" — OR to close/remove one — e.g. "워크트리
-  종료해줘", "워크트리 삭제", "이 워크트리 닫아줘", "remove worktree". Portable
-  and zero-config: every default is auto-detected and overridable.
+  Create, open, pick, list, clean up, or remove a git worktree and show it in a
+  new terminal pane (tmux or cmux). Use when the user asks to make/open a
+  worktree — e.g. "SELLERSYS-1234 워크트리 만들어줘", "open a worktree for
+  FOO-12", "<ticket> 워크트리를 새 pane 에 띄워줘" — OR to list/pick an existing
+  one — e.g. "워크트리 보여줘", "워크트리 목록", "어떤 워크트리 열까", "show
+  worktrees", "switch worktree" — OR to clean up finished/stale ones — e.g.
+  "끝난 워크트리 정리해줘", "묵은 워크트리 치워줘", "clean up worktrees" — OR to
+  close/remove one — e.g. "워크트리 종료해줘", "워크트리 삭제", "이 워크트리
+  닫아줘", "remove worktree". Portable and zero-config: every default is
+  auto-detected and overridable.
 ---
 
 # worktree-pane
