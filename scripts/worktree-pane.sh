@@ -172,10 +172,14 @@ if [ -z "$branch" ] && [ "$is_path" -ne 1 ]; then
   fi
 fi
 
-# --- detect multiplexer ---
+# --- detect multiplexer (must be INSIDE a session, not merely installed) ---
+# $TMUX is set only inside a tmux session; CMUX_SURFACE_ID only inside a cmux
+# surface. Gating on these (not `command -v`) avoids picking cmux when it's just
+# on PATH but the call came from a plain terminal — there's no pane to open, so
+# 'none' is the right answer (a normal mux-out mode, not a failure).
 if [ "$mux" = "auto" ]; then
   if [ -n "${TMUX:-}" ]; then mux="tmux"
-  elif command -v cmux >/dev/null 2>&1; then mux="cmux"
+  elif [ -n "${CMUX_SURFACE_ID:-}" ] && command -v cmux >/dev/null 2>&1; then mux="cmux"
   else mux="none"; fi
 fi
 

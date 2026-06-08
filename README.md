@@ -107,7 +107,7 @@ Optional. Lives at `~/.config/worktree-pane/config.env` (or set
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `WORKTREE_PANE_MUX` | `auto` | `auto` / `tmux` / `cmux` / `none` |
+| `WORKTREE_PANE_MUX` | `auto` | `auto` / `tmux` / `cmux` / `none`. `auto` picks a multiplexer only when run **inside** one (`$TMUX` / `$CMUX_SURFACE_ID`); from a plain terminal it resolves to `none` (prepares the worktree, prints the `cd` path). Force with `--mux`. |
 | `WORKTREE_PANE_ROOT` | `.claude/worktrees` | worktree dir, repo-relative or absolute |
 | `WORKTREE_PANE_BRANCH_PREFIX` | `feature/` | prefix for ticket branches; blank = none |
 | `WORKTREE_PANE_BASE` | *(empty)* | default base branch; blank = auto-detect |
