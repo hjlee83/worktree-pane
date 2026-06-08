@@ -293,6 +293,6 @@ U1 / 삭제 U3) 보는 것이지, 보는 것 자체가 목적인 경우는 드�
 | 7 | ✅ **완료** — "에이전트 실행 중" 판정을 `node` 포함 comm 매칭 → **tty 의 풀 args 에서 `agent_cmd` 직접 매칭**으로. `node …/claude`는 잡고 `node …/vite` dev 서버는 안 잡음. tmux 도 pane_current_command 대신 pane_tty→ps args 로 통일 | — | script |
 | 8 | ✅ **완료** — prunable(등록됐는데 dir 없음) 대상 `--remove` 는 스크립트가 직접 `git worktree prune`(파일 무손상이라 안전) 후 exit 0. 정상 remove 뒤에도 prune 으로 잔여 정리. stray-dir(파괴적 rm)은 #2 대로 거부 유지 | — | script, SKILL.md |
 | 9 | ✅ **완료** — 신규 브랜치 base 후보 제시: repo 기본 + develop + 살아있는 워크트리 브랜치(에픽). 스크립트가 `WORKTREE_PANE_BASE_CANDIDATES` 로 emit, 스킬이 ≤4 라디오 / >4 표로 제시 (원칙 7) | — | script `base_candidates()`, SKILL.md |
-| 12 | 에픽 base 후보가 `origin/<epic>` 으로 제시됨 — 로컬 워크트리에 미푸시 커밋 있으면 그 base 가 stale. 살아있는 워크트리 브랜치는 **로컬 tip** 을 base 후보로 줄지 검토 (현재는 `--base <local>` 수동) | 낮음 | script `base_candidates()` |
+| 12 | ✅ **완료** — base 후보에서 통합 브랜치(develop/master/main)는 `origin/<x>`, **살아있는 워크트리 브랜치는 로컬 tip(`<x>`)** 으로 제시. 에픽의 미푸시 커밋까지 포함된 로컬 tip 에서 sub 분기 가능 (`add_local()`) | — | script `base_candidates()` |
 | 10 | ✅ **완료** — mux 감지를 PATH 기반에서 **세션 마커** 기반으로: cmux 는 `$CMUX_SURFACE_ID`(+CLI 존재), tmux 는 `$TMUX`. 세션 밖 호출은 `none`(정상 mux-out 모드, §2.1). 검증: 세션 안 cmux 감지, CMUX_SURFACE_ID 제거 시 none | — | script, README |
 | 11 | ✅ **완료** — `--stale`/`--cleanup` (read-only 분류): completed(`--merged` OR upstream-gone) / active / gray(미머지+오래됨). `status\tpath\tbranch\t최종커밋\tclean|dirty` emit. 삭제는 `--remove` 재사용(2-step 확인·dirty 가드·prune·브랜치 보존). 회색지대 자동삭제 안 함. SKILL.md 에 fetch→stale→표→선택→remove 흐름 | — | script, SKILL.md, README |

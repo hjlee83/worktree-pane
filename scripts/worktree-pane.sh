@@ -504,11 +504,14 @@ if [ "$remove_mode" -eq 1 ]; then do_remove; exit 0; fi
 # Emit a deduped, ordered list of plausible base refs so the caller can let the
 # user choose: repo default (origin/HEAD → master → main), then develop if it
 # exists, then branches of live worktrees (epics / other active work — M2b).
-# The new branch being created is excluded. Prefer origin/<x> when that
-# remote-tracking ref resolves, else the bare name.
+# The new branch being created is excluded.
+#   - Integration branches use origin/<x> (you want the latest pushed tip).
+#   - Live worktree branches use the LOCAL <x> tip — they're actively developed
+#     in their worktree and may be ahead of origin (e.g. an epic with unpushed
+#     commits), so origin/<x> would be a stale base for its sub-tasks.
 base_candidates() {
   local seen=" " out="" x ref
-  add() {
+  add() {                                            # prefer origin/<x> (integration)
     x="$1"
     [ -n "$x" ] || return 0
     [ "$x" = "$branch" ] && return 0                 # never offer the new branch itself
@@ -521,6 +524,14 @@ base_candidates() {
     fi
     out="${out:+$out|}$ref"
   }
+  add_local() {                                      # prefer the local <x> tip (worktree branches)
+    x="$1"
+    [ -n "$x" ] || return 0
+    [ "$x" = "$branch" ] && return 0
+    case "$seen" in *" $x "*) return 0 ;; esac
+    seen="$seen$x "
+    out="${out:+$out|}$x"
+  }
   # 1) repo default
   add "$(git -C "$gitdir" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')"
   for b in master main; do
@@ -531,8 +542,8 @@ base_candidates() {
      || git -C "$gitdir" rev-parse --verify --quiet refs/heads/develop >/dev/null; then
     add develop
   fi
-  # 3) branches of live worktrees (epics / other active work)
-  while IFS=$'\t' read -r _ wb; do add "$wb"; done <<EOF
+  # 3) branches of live worktrees (epics / other active work) — local tip
+  while IFS=$'\t' read -r _ wb; do add_local "$wb"; done <<EOF
 $(do_list)
 EOF
   printf '%s' "$out"
