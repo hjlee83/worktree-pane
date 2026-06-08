@@ -211,19 +211,24 @@ resolve_agent_cmd() {
   esac
 }
 agent_cmd=$(resolve_agent_cmd)
-# Process names that mean "an agent is already running" in a pane (heuristic —
-# Claude/others run under node, so node counts as on).
-agent_proc_re='^(node|claude|kiro|codex|cursor-agent|gemini)$'
 
-agent_running_on_tty() {   # 0 if an agent process is on this tty (cmux)
-  local tty="${1#/dev/}"
+# Is the resolved agent ($agent_cmd) already running on this tty? Match its
+# command name in the FULL process args, so `node …/claude` counts but an
+# unrelated `node …/vite` dev server does not — fixes the old heuristic that
+# treated ANY `node` process as "the agent is running" and skipped relaunch.
+agent_running_on_tty() {
+  local tty="${1#/dev/}" needle
   [ -n "$tty" ] || return 1
-  ps -t "$tty" -o comm= 2>/dev/null | sed 's@.*/@@' | grep -qiE "$agent_proc_re"
+  needle=$(printf '%s' "${agent_cmd:-}" | awk '{print $1}')
+  needle=$(basename "$needle" 2>/dev/null)
+  [ -n "$needle" ] || return 1
+  ps -t "$tty" -o args= 2>/dev/null | grep -qiF -- "$needle"
 }
-tmux_agent_running() {     # 0 if the window's active pane is running an agent
-  local cmd
-  cmd=$(tmux display-message -p -t "$1" '#{pane_current_command}' 2>/dev/null)
-  printf '%s\n' "$cmd" | grep -qiE "$agent_proc_re"
+tmux_agent_running() {     # 0 if the window's active pane is running the agent
+  local tty
+  tty=$(tmux display-message -p -t "$1" '#{pane_tty}' 2>/dev/null)
+  [ -n "$tty" ] || return 1
+  agent_running_on_tty "$tty"
 }
 
 # ---------- pane helpers ----------
