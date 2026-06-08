@@ -140,6 +140,7 @@ Examples:
 
 ```bash
 worktree-pane SELLERSYS-1234            # feature/SELLERSYS-1234 in .claude/worktrees/
+worktree-pane hotfix/SELLERSYS-1234     # full branch name kept as-is; dir = SELLERSYS-1234
 worktree-pane FOO-12 --base develop     # branch off develop
 worktree-pane sellersys-1234            # auto-uppercased
 worktree-pane spike-cache --branch spike/cache   # non-ticket name + explicit branch

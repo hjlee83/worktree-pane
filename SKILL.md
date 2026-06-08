@@ -183,6 +183,13 @@ bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET-OR-NAME>
 
 - Pass the name **exactly as spoken**; the script uppercases ticket-style
   names (`foo-12` → `FOO-12`) and prepends the branch prefix on its own.
+- **Non-default prefix (e.g. `hotfix/` instead of `feature/`):** just give the
+  **full branch name** — `hotfix/SELLERSYS-1234`. A slash-containing name is
+  treated as the branch verbatim (no prefix added), and the worktree directory
+  is named after its **basename** (`SELLERSYS-1234`). Equivalent: keep the
+  ticket name but pass `--branch hotfix/SELLERSYS-1234`. (Because the dir is the
+  basename, `feature/X` and `hotfix/X` map to the same dir — the script refuses
+  if it already holds the other branch; use `--root` for a separate location.)
 - Honor explicit overrides from the user as flags:
   `--base <branch>`, `--branch <branch>`, `--root <dir>`, `--mux tmux|cmux|none`.
 - The script is idempotent: if the worktree already exists it reuses it, and

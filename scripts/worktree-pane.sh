@@ -131,31 +131,37 @@ if printf '%s' "$name" | grep -Eq '^[A-Za-z]+-[0-9]+$'; then
 fi
 
 # --- resolve worktree path + label ---
+# A bare path is only assumed when the input is *clearly* a path: it starts with
+# /, ~, ./ or ../, OR it contains a slash AND already exists on disk. Otherwise
+# the input is a NAME — which may itself contain slashes (a branch name like
+# `feature/SELLERSYS-7652`). The directory is named after the branch's basename.
 repo_root=""
+is_path=0
 case "$name" in
-  /*|\~*|*/*)
-    wt="${name/#\~/$HOME}"
-    label=$(basename "$wt")
-    repo_root=$(git -C "$(dirname "$wt")" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel 2>/dev/null || true)
-    ;;
-  *)
-    repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-      echo "worktree-pane: not inside a git repo — pass a full path instead" >&2; exit 1; }
-    case "$wt_root" in
-      /*) wt="$wt_root/$name" ;;
-      *)  wt="$repo_root/$wt_root/$name" ;;
-    esac
-    label="$name"
-    ;;
+  /*|\~*|./*|../*) is_path=1 ;;
+  */*)             [ -e "$name" ] && is_path=1 ;;
 esac
+if [ "$is_path" -eq 1 ]; then
+  wt="${name/#\~/$HOME}"
+  label=$(basename "$wt")
+  repo_root=$(git -C "$(dirname "$wt")" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel 2>/dev/null || true)
+else
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "worktree-pane: not inside a git repo — pass a full path instead" >&2; exit 1; }
+  label=$(basename "$name")            # branch may contain slashes; dir = basename
+  case "$wt_root" in
+    /*) wt="$wt_root/$label" ;;
+    *)  wt="$repo_root/$wt_root/$label" ;;
+  esac
+fi
 gitdir="${repo_root:-$PWD}"
 
-# --- decide branch name ---
-if [ -z "$branch" ]; then
+# --- decide branch name (name mode only; bare-path mode targets an existing wt) ---
+if [ -z "$branch" ] && [ "$is_path" -ne 1 ]; then
   if [ "$is_ticket" -eq 1 ]; then
     branch="${branch_prefix}${name}"
   else
-    branch="$name"
+    branch="$name"                     # full branch name as given (may contain '/')
   fi
 fi
 
@@ -522,6 +528,17 @@ if [ ! -d "$wt" ]; then
     git -C "$gitdir" worktree add "$wt" --no-track -b "$branch" "$base_ref"
   fi
 else
+  # The dir name is the branch's basename, so two branches with the same
+  # basename (e.g. feature/X and hotfix/X) would map to the same dir. If it
+  # already holds a *different* branch, refuse rather than open the wrong one.
+  if [ "$is_path" -ne 1 ] && [ -n "$branch" ] && is_worktree_root "$wt"; then
+    cur=$(git -C "$wt" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$cur" ] && [ "$cur" != "$branch" ]; then
+      echo "worktree-pane: '$wt' already holds branch '$cur', not '$branch' (basename collision)." >&2
+      echo "  Use --branch <name> to disambiguate, or --root <dir> for a separate location." >&2
+      exit 1
+    fi
+  fi
   echo "worktree-pane: worktree already exists at $wt"
 fi
 

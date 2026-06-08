@@ -279,7 +279,7 @@ U1 / 삭제 U3) 보는 것이지, 보는 것 자체가 목적인 경우는 드�
 | 1 | 신규 브랜치 upstream=origin/<base> → `--no-track` 필요 | 높음 | script:397 |
 | 2 | ✅ **완료** — 고아 `git -C` 메인 fallback. `is_worktree_root()` 가드 + 거부→유형판별(`prunable`/`stray-dir`/모호)→맞는 정리 제안(prune/rm -rf, 모호하면 제안 없음). 메인 소스 폴더 오삭제 방지(워크트리 루트 아래+미등록+`.git`없음만 rm 제안). SKILL.md 후속 명시 | — | script, SKILL.md |
 | 3 | ✅ **완료** — `--close` 를 `--remove` 별칭에서 분리. 이제 `--close` 는 비파괴적이라 안내 후 거부(exit 2), 삭제는 `--remove`/`--rm` 만. "닫아줘=삭제" 오인 차단 (U4/Q3) | — | script, README |
-| 4 | 슬래시 포함 이름 → 상대경로 오인 (`feature+` 기형 디렉터리의 원인) | 중간 | script:127 |
+| 4 | ✅ **완료** — 슬래시 이름→상대경로 오인. 이제 경로는 `/~./../`로 시작하거나 슬래시+실존일 때만, 그 외 `feature/X`·`hotfix/X` 는 브랜치명으로 처리(prefix 미추가), 디렉터리=basename. basename 충돌(`feature/X` vs `hotfix/X`) 가드 추가. 비-feature prefix 는 풀 브랜치명으로 지정 | — | script, SKILL.md, README |
 | 5 | suffix 붙은 이름은 prefix 미적용 | 중간 | script:120 |
 | 6 | `--mux none` 명시에도 "not detected" 문구 | 낮음 | script:407 |
 | 7 | `node` = 에이전트 실행 중 휴리스틱 오판 | 낮음 | script:189 |
