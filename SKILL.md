@@ -197,16 +197,30 @@ bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET-OR-NAME>
 When no local or remote branch exists, the script will **not** create one on
 its own. Run it normally first; if it prints a line starting with
 `WORKTREE_PANE_NEEDS_CONFIRM` and exits with code 3, that means a new branch
-would be created. Parse the proposed `branch='...'` and `base='...'`, then use
-**AskUserQuestion** to confirm with the user:
+would be created. The output gives you everything to ask with:
 
-- whether to create the branch at all, and
-- which **base** to branch from (offer the proposed base as the recommended
-  option; also offer `develop`/`main`/`master` if they exist, plus "other").
+```
+WORKTREE_PANE_NEEDS_CONFIRM branch='feature/X' base='origin/master' worktree='/…'
+WORKTREE_PANE_BASE_CANDIDATES origin/master|origin/develop|feature/EPIC-100|…
+```
 
-The branch **name** is derived from the ticket — don't ask about it unless the
-user volunteers one. Once confirmed, re-invoke with the chosen base and the
-confirm flag:
+- `branch='...'` — the new branch name (derived from the ticket; don't ask
+  about it unless the user volunteers one).
+- `base='...'` — the recommended default base.
+- `WORKTREE_PANE_BASE_CANDIDATES` — `|`-separated base candidates: repo default,
+  `develop` if present, then **branches of live worktrees** (so an epic can be
+  picked as base for its sub-tasks). The recommended `base` is among them.
+
+**Always let the user pick the base** from these candidates (the user asked for
+this). Presentation follows the candidate count:
+
+- **≤ 4 candidates** → AskUserQuestion radio, recommended `base` first.
+- **> 4 candidates** → don't force a radio (4-item cap). Show them as a **table**
+  and let the user name one (or accept the default). Same rule as listing.
+
+The candidate may be a remote ref (`origin/feature/EPIC-100`); if the user wants
+to branch off the *local* tip of a live worktree branch (unpushed epic work),
+pass the bare name as `--base`. Once the user chooses, re-invoke:
 
 ```bash
 bash "<skill-dir>/scripts/worktree-pane.sh" <TICKET> --base <chosen> --create-new

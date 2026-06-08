@@ -284,6 +284,7 @@ U1 / 삭제 U3) 보는 것이지, 보는 것 자체가 목적인 경우는 드�
 | 6 | `--mux none` 명시에도 "not detected" 문구 | 낮음 | script:407 |
 | 7 | `node` = 에이전트 실행 중 휴리스틱 오판 | 낮음 | script:189 |
 | 8 | 고아 등록 `worktree prune` 미수행 | 낮음 | script:330 |
-| 9 | **신규 브랜치 base 후보에 살아있는 워크트리 브랜치(에픽) 포함** — M2b 지원. 현재는 develop/main/master 만 제안돼 에픽 base 는 매번 `--base` 수동 지정 | 중간 | SKILL.md (base 확인 질문) |
+| 9 | ✅ **완료** — 신규 브랜치 base 후보 제시: repo 기본 + develop + 살아있는 워크트리 브랜치(에픽). 스크립트가 `WORKTREE_PANE_BASE_CANDIDATES` 로 emit, 스킬이 ≤4 라디오 / >4 표로 제시 (원칙 7) | — | script `base_candidates()`, SKILL.md |
+| 12 | 에픽 base 후보가 `origin/<epic>` 으로 제시됨 — 로컬 워크트리에 미푸시 커밋 있으면 그 base 가 stale. 살아있는 워크트리 브랜치는 **로컬 tip** 을 base 후보로 줄지 검토 (현재는 `--base <local>` 수동) | 낮음 | script `base_candidates()` |
 | 10 | mux 감지가 PATH 기반 — cmux 설치돼 있으나 cmux 세션 밖에서 호출해도 mux=cmux 로 오판. "실제 세션 안인지"(예: `$CMUX`/`$TMUX` 류) 확인 필요 | 중간 | script:155 |
 | 11 | **끝난/묵은 워크트리 배치 정리(U3-a)** — `--merged` OR upstream-gone(squash 팀 커버)로 완료/활성/회색지대 라벨 표시한 표 → 선택 삭제. 정리 전 `fetch --prune` 선행. 회색지대 자동삭제 금지(홀딩 보호). **삭제 직전 2-step 재확인**, dirty 보호·브랜치 보존 유지, `worktree prune` 동반. (upstream-gone 정확도는 #1 선결) | 중간 | 신규 (`--stale`/`--cleanup` 류) |

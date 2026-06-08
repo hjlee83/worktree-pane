@@ -349,6 +349,44 @@ do_remove() {
 
 if [ "$remove_mode" -eq 1 ]; then do_remove; exit 0; fi
 
+# ---------- base candidates (for a brand-new branch) ----------
+# Emit a deduped, ordered list of plausible base refs so the caller can let the
+# user choose: repo default (origin/HEAD → master → main), then develop if it
+# exists, then branches of live worktrees (epics / other active work — M2b).
+# The new branch being created is excluded. Prefer origin/<x> when that
+# remote-tracking ref resolves, else the bare name.
+base_candidates() {
+  local seen=" " out="" x ref
+  add() {
+    x="$1"
+    [ -n "$x" ] || return 0
+    [ "$x" = "$branch" ] && return 0                 # never offer the new branch itself
+    case "$seen" in *" $x "*) return 0 ;; esac       # dedup by branch name
+    seen="$seen$x "
+    if git -C "$gitdir" rev-parse --verify --quiet "refs/remotes/origin/$x" >/dev/null; then
+      ref="origin/$x"
+    else
+      ref="$x"
+    fi
+    out="${out:+$out|}$ref"
+  }
+  # 1) repo default
+  add "$(git -C "$gitdir" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')"
+  for b in master main; do
+    git -C "$gitdir" rev-parse --verify --quiet "refs/remotes/origin/$b" >/dev/null && add "$b"
+  done
+  # 2) develop (common integration branch), if present local or remote
+  if git -C "$gitdir" rev-parse --verify --quiet refs/remotes/origin/develop >/dev/null \
+     || git -C "$gitdir" rev-parse --verify --quiet refs/heads/develop >/dev/null; then
+    add develop
+  fi
+  # 3) branches of live worktrees (epics / other active work)
+  while IFS=$'\t' read -r _ wb; do add "$wb"; done <<EOF
+$(do_list)
+EOF
+  printf '%s' "$out"
+}
+
 # ---------- create worktree if missing ----------
 if [ ! -d "$wt" ]; then
   if git -C "$gitdir" rev-parse --verify --quiet "refs/heads/$branch" >/dev/null; then
@@ -363,7 +401,10 @@ if [ ! -d "$wt" ]; then
     git -C "$gitdir" fetch -q origin "$branch" 2>/dev/null || true
     git -C "$gitdir" worktree add "$wt" -b "$branch" "origin/$branch"
   else
+    # Gather base candidates unless the user pinned one with --base.
+    cands=""
     if [ -z "$base" ]; then
+      cands=$(base_candidates)
       base=$(git -C "$gitdir" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@' || true)
       if [ -z "$base" ]; then
         for b in master main; do
@@ -371,25 +412,39 @@ if [ ! -d "$wt" ]; then
         done
       fi
       [ -n "$base" ] || { echo "worktree-pane: cannot detect default branch; pass --base" >&2; exit 1; }
-      echo "worktree-pane: base auto-detected = '$base'"
     fi
     if git -C "$gitdir" rev-parse --verify --quiet "refs/remotes/origin/$base" >/dev/null; then
       base_ref="origin/$base"
     else
       base_ref="$base"
     fi
-    # Creating a brand-new branch must be confirmed.
+    # Creating a brand-new branch must be confirmed; offer the base candidates.
     if [ "$create_new" -ne 1 ]; then
       if [ -t 0 ]; then
-        printf "worktree-pane: no branch for '%s' yet. Create '%s' from '%s'? [y/N] " "$name" "$branch" "$base_ref" >&2
-        read -r reply </dev/tty || reply=""
-        case "$reply" in
-          y|Y|yes|YES) ;;
-          *) echo "worktree-pane: aborted (no branch created)."; exit 0 ;;
-        esac
+        if [ -n "$cands" ]; then
+          echo "worktree-pane: no branch for '$name' yet — choose a base for new '$branch':" >&2
+          i=0; IFS='|'; set -- $cands; unset IFS
+          for c in "$@"; do i=$((i+1)); printf "  %d) %s%s\n" "$i" "$c" \
+            "$([ "$c" = "$base_ref" ] && printf ' (default)')" >&2; done
+          printf "  select [1-%d, Enter=default '%s', n=cancel]: " "$i" "$base_ref" >&2
+          read -r reply </dev/tty || reply=""
+          case "$reply" in
+            ""|y|Y|yes|YES) ;;                                   # keep base_ref
+            n|N|no|NO) echo "worktree-pane: aborted (no branch created)."; exit 0 ;;
+            *[!0-9]*) echo "worktree-pane: invalid selection; aborted." >&2; exit 1 ;;
+            *) base_ref=$(printf '%s' "$cands" | cut -d'|' -f"$reply")
+               [ -n "$base_ref" ] || { echo "worktree-pane: selection out of range; aborted." >&2; exit 1; } ;;
+          esac
+        else
+          printf "worktree-pane: no branch for '%s' yet. Create '%s' from '%s'? [y/N] " "$name" "$branch" "$base_ref" >&2
+          read -r reply </dev/tty || reply=""
+          case "$reply" in y|Y|yes|YES) ;; *) echo "worktree-pane: aborted (no branch created)."; exit 0 ;; esac
+        fi
       else
-        # Non-interactive (e.g. driven by an agent): defer the decision.
+        # Non-interactive (e.g. driven by an agent): defer the decision, and
+        # hand back the candidate list so the caller can present a choice.
         echo "WORKTREE_PANE_NEEDS_CONFIRM branch='$branch' base='$base_ref' worktree='$wt'"
+        [ -n "$cands" ] && echo "WORKTREE_PANE_BASE_CANDIDATES $cands"
         exit 3
       fi
     fi
