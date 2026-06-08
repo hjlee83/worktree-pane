@@ -152,6 +152,16 @@ the worktree **directory** (and closes its pane); the branch is kept.
    ```bash
    bash "<skill-dir>/scripts/worktree-pane.sh" --remove "<ticket-or-path>" --force
    ```
+4. If the target isn't a real worktree, the script refuses (exit 1) and, when
+   it can, classifies the orphan as `WORKTREE_PANE_ORPHAN kind='...'`. Propose
+   the matching cleanup — **confirm before running**:
+   - `kind='prunable'` (registered but its directory is gone) → safe, no files
+     touched: `git -C <repo> worktree prune`.
+   - `kind='stray-dir'` (a stray dir under the worktree root, no `.git`) →
+     destructive: **show its contents first**, then `rm -rf <path>` only on
+     explicit confirmation.
+   - No marker (e.g. the path resolved to the main repo) → just report the
+     refusal; never propose a destructive command for an ambiguous path.
 
 Removal keeps the local branch by design — never delete the branch unless the
 user explicitly asks.

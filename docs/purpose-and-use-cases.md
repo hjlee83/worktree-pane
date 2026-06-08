@@ -277,7 +277,7 @@ U1 / 삭제 U3) 보는 것이지, 보는 것 자체가 목적인 경우는 드�
 | # | 이슈 | 심각도 | 위치 |
 |---|---|---|---|
 | 1 | 신규 브랜치 upstream=origin/<base> → `--no-track` 필요 | 높음 | script:397 |
-| 2 | ✅ **완료** — 고아 디렉터리 `git -C` 메인 silent fallback. 스크립트 `is_worktree_root()`(toplevel==path) 가드로 `do_remove` 차단(고아면 에러·중단, 메인 안 건드림), SKILL.md 에 `git -C` 전 검증 명시 | — | script, SKILL.md |
+| 2 | ✅ **완료** — 고아 `git -C` 메인 fallback. `is_worktree_root()` 가드 + 거부→유형판별(`prunable`/`stray-dir`/모호)→맞는 정리 제안(prune/rm -rf, 모호하면 제안 없음). 메인 소스 폴더 오삭제 방지(워크트리 루트 아래+미등록+`.git`없음만 rm 제안). SKILL.md 후속 명시 | — | script, SKILL.md |
 | 3 | `--close`/`--rm` 가 `--remove`(삭제) 별칭 — "닫아줘"가 삭제로 오인되는 함정. `--close` 별칭 **제거** (U4 비스코프, Q3) | 높음 | script:89 |
 | 4 | 슬래시 포함 이름 → 상대경로 오인 (`feature+` 기형 디렉터리의 원인) | 중간 | script:127 |
 | 5 | suffix 붙은 이름은 prefix 미적용 | 중간 | script:120 |

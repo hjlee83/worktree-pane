@@ -336,13 +336,54 @@ is_worktree_root() {
   [ "$top" = "$d" ]
 }
 
+# Canonicalize a path even if it doesn't exist (parent must exist).
+canon_path() {
+  if [ -d "$1" ]; then (cd "$1" 2>/dev/null && pwd -P); return; fi
+  local d; d=$(cd "$(dirname "$1")" 2>/dev/null && pwd -P) || return 1
+  printf '%s/%s' "$d" "$(basename "$1")"
+}
+path_under() { case "$2" in "$1"/*) return 0 ;; *) return 1 ;; esac; }   # path_under <parent> <child>
+
+# Report an orphan and exit. $1=kind (prunable|stray-dir), $2=path. Interactive:
+# print the safe cleanup command. Non-interactive: machine marker for the caller.
+orphan_report() {
+  if [ -t 0 ]; then
+    case "$1" in
+      prunable)  echo "worktree-pane: '$2' is registered but its directory is gone (orphan)." >&2
+                 echo "  Safe to clean the stale entry: git -C \"$gitdir\" worktree prune" >&2 ;;
+      stray-dir) echo "worktree-pane: '$2' is a stray directory (no .git, not a registered worktree)." >&2
+                 echo "  git can't remove it; if you're sure it's junk: rm -rf \"$2\"" >&2 ;;
+    esac
+  else
+    echo "WORKTREE_PANE_ORPHAN kind='$1' worktree='$2'"
+  fi
+  exit 1
+}
+
 # ---------- remove mode ----------
 do_remove() {
-  [ -d "$wt" ] || { echo "worktree-pane: no worktree at $wt" >&2; exit 1; }
+  local canon registered=0 wt_root_abs
+  canon=$(canon_path "$wt")
+  if [ -n "$canon" ] && git -C "$gitdir" worktree list --porcelain 2>/dev/null \
+       | grep -Fxq "worktree $canon"; then registered=1; fi
+  case "$wt_root" in /*) wt_root_abs="$wt_root" ;; *) wt_root_abs="$gitdir/$wt_root" ;; esac
+  wt_root_abs=$(cd "$wt_root_abs" 2>/dev/null && pwd -P) || wt_root_abs=""
+
+  if [ ! -d "$wt" ]; then
+    [ "$registered" -eq 1 ] && orphan_report prunable "$wt"   # registered but dir gone
+    echo "worktree-pane: no worktree at $wt" >&2; exit 1
+  fi
   if ! is_worktree_root "$wt"; then
-    echo "worktree-pane: '$wt' is not a registered worktree root (orphan/stray dir?) —" >&2
-    echo "  refusing to operate so we don't touch the main repo by fallback. Nothing changed." >&2
-    echo "  If it's a stray directory, remove it manually; for missing-but-registered ones run 'git worktree prune'." >&2
+    # Dir exists but isn't its own worktree root. Only propose `rm -rf` when it's
+    # a stray dir DIRECTLY under the worktree root (never for arbitrary paths —
+    # e.g. a real source dir of the main repo). Otherwise refuse without a
+    # destructive suggestion.
+    if [ "$registered" -ne 1 ] && [ -n "$wt_root_abs" ] && [ -n "$canon" ] \
+       && path_under "$wt_root_abs" "$canon" && [ ! -e "$wt/.git" ]; then
+      orphan_report stray-dir "$wt"
+    fi
+    echo "worktree-pane: '$wt' is not a worktree root (resolves to '$(git -C "$wt" rev-parse --show-toplevel 2>/dev/null)')." >&2
+    echo "  Refusing to operate so the main repo isn't touched by fallback. Inspect and remove manually if intended." >&2
     exit 1
   fi
   if [ "$force" -ne 1 ] && [ -n "$(git -C "$wt" status --porcelain 2>/dev/null)" ]; then
