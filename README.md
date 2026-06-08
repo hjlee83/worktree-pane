@@ -32,6 +32,36 @@ worktree-pane: creating 'feature/SELLERSYS-9001' from 'origin/develop'
 worktree-pane: opened surface:9 → SELLERSYS-9001 (~/proj/.claude/worktrees/SELLERSYS-9001)
 ```
 
+**Work several tickets at once (parallel)** — one pane per ticket, each with
+its own checkout and (optionally) its own agent; the main checkout never moves:
+
+```text
+$ worktree-pane SELLERSYS-101      # → pane A: feature/SELLERSYS-101
+$ worktree-pane SELLERSYS-102      # → pane B: feature/SELLERSYS-102
+$ worktree-pane SELLERSYS-103      # → pane C: feature/SELLERSYS-103
+
+$ worktree-pane --list             # the streams living side by side
+~/proj/.claude/worktrees/SELLERSYS-101   feature/SELLERSYS-101
+~/proj/.claude/worktrees/SELLERSYS-102   feature/SELLERSYS-102
+~/proj/.claude/worktrees/SELLERSYS-103   feature/SELLERSYS-103
+# main checkout stays on develop — all three are isolated
+```
+
+**Epic → sub-tasks (hub & spoke)** — keep an epic worktree as the hub and
+branch sub-tasks off it; when creating a sub without `--base`, the epic shows
+up as a base candidate (its local tip, so unpushed epic work is included):
+
+```text
+$ worktree-pane feature/EPIC-100 --base develop --create-new   # the hub
+worktree-pane: creating 'feature/EPIC-100' from 'origin/develop'
+
+$ worktree-pane SELLERSYS-201 --base feature/EPIC-100 --create-new
+worktree-pane: creating 'feature/SELLERSYS-201' from 'feature/EPIC-100'
+# finish the sub (push / MR), retire it, start the next one off the same hub
+$ worktree-pane --remove SELLERSYS-201
+$ worktree-pane SELLERSYS-202 --base feature/EPIC-100 --create-new
+```
+
 **Don't fork the same ticket** — type a bare ticket and it finds an existing
 branch (any prefix/suffix, local or remote) instead of making a duplicate:
 
