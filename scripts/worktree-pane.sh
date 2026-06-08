@@ -177,7 +177,9 @@ fi
 # surface. Gating on these (not `command -v`) avoids picking cmux when it's just
 # on PATH but the call came from a plain terminal — there's no pane to open, so
 # 'none' is the right answer (a normal mux-out mode, not a failure).
+mux_auto=0
 if [ "$mux" = "auto" ]; then
+  mux_auto=1
   if [ -n "${TMUX:-}" ]; then mux="tmux"
   elif [ -n "${CMUX_SURFACE_ID:-}" ] && command -v cmux >/dev/null 2>&1; then mux="cmux"
   else mux="none"; fi
@@ -583,6 +585,12 @@ fi
 case "$mux" in
   tmux) open_tmux ;;
   cmux) open_cmux ;;
-  none) echo "worktree-pane: no tmux/cmux detected — worktree ready at $wt"; echo "  cd $wt" ;;
+  none)
+    if [ "$mux_auto" -eq 1 ]; then
+      echo "worktree-pane: no tmux/cmux session detected — worktree ready at $wt"
+    else
+      echo "worktree-pane: worktree ready at $wt (pane not opened: --mux none)"
+    fi
+    echo "  cd $wt" ;;
   *) echo "worktree-pane: unknown mux '$mux'" >&2; exit 1 ;;
 esac

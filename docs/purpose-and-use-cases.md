@@ -289,7 +289,7 @@ U1 / 삭제 U3) 보는 것이지, 보는 것 자체가 목적인 경우는 드�
 | 3 | ✅ **완료** — `--close` 를 `--remove` 별칭에서 분리. 이제 `--close` 는 비파괴적이라 안내 후 거부(exit 2), 삭제는 `--remove`/`--rm` 만. "닫아줘=삭제" 오인 차단 (U4/Q3) | — | script, README |
 | 4 | ✅ **완료** — 슬래시 이름→상대경로 오인. 이제 경로는 `/~./../`로 시작하거나 슬래시+실존일 때만, 그 외 `feature/X`·`hotfix/X` 는 브랜치명으로 처리(prefix 미추가), 디렉터리=basename. basename 충돌(`feature/X` vs `hotfix/X`) 가드 추가. 비-feature prefix 는 풀 브랜치명으로 지정 | — | script, SKILL.md, README |
 | 5 | ✅ **완료** — (A) suffix 티켓(`...-desc`)도 인식: prefix 적용 + 머리(`PREFIX-NUM`)만 대문자, suffix 원형. (B) 안티-fork: exact 미스 시 티켓 ID 포함 브랜치(로컬+원격 `ls-remote`) 탐색해 `WORKTREE_PANE_TICKET_MATCHES` 로 defer, 사용자가 기존 브랜치 선택 or `--create-new`. 순수 문자열 매칭(JIRA 비종속) | — | script, SKILL.md |
-| 6 | `--mux none` 명시에도 "not detected" 문구 | 낮음 | script:407 |
+| 6 | ✅ **완료** — `mux_auto` 플래그로 구분: auto→none 은 "no tmux/cmux session detected", 명시 `--mux none` 은 "pane not opened: --mux none" | — | script |
 | 7 | `node` = 에이전트 실행 중 휴리스틱 오판 | 낮음 | script:189 |
 | 8 | 고아 등록 `worktree prune` 미수행 | 낮음 | script:330 |
 | 9 | ✅ **완료** — 신규 브랜치 base 후보 제시: repo 기본 + develop + 살아있는 워크트리 브랜치(에픽). 스크립트가 `WORKTREE_PANE_BASE_CANDIDATES` 로 emit, 스킬이 ≤4 라디오 / >4 표로 제시 (원칙 7) | — | script `base_candidates()`, SKILL.md |
