@@ -111,9 +111,21 @@ This repo is a Claude Code **plugin marketplace**. In Claude Code:
 /plugin install worktree-pane@sellersys-tools
 ```
 
-Update later with `/plugin marketplace update sellersys-tools` (or it auto-updates
-at session start). Since the plugin pins no version, every pushed commit is the
-latest. Share just those two lines with your team.
+Share just those two lines with your team. **After installing, use it exactly
+as before** — just talk to Claude ("SELLERSYS-1234 워크트리 열어줘", see the Demo
+above). Nothing else changes.
+
+Manage it from inside Claude Code:
+
+```text
+/plugin                                        # plugin manager UI
+/plugin list                                   # what's installed
+/plugin marketplace update sellersys-tools     # pull the latest (also auto-updates at session start)
+/plugin disable worktree-pane@sellersys-tools  # turn off temporarily
+/plugin enable  worktree-pane@sellersys-tools  # turn back on
+```
+
+The plugin pins no version, so every pushed commit is the latest.
 
 ### Option B — clone into your skills dir (single machine)
 
