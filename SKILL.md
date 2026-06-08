@@ -173,6 +173,36 @@ user explicitly asks.
 > `cd` back to the main checkout first so the directory isn't deleted out from
 > under the session.
 
+### Cleaning up finished worktrees (배치 정리)
+
+When the user wants to tidy up — "끝난 워크트리 정리해줘", "묵은 거 치워줘",
+"clean up worktrees":
+
+1. Refresh refs first so merge/upstream state is accurate, then classify:
+   ```bash
+   git -C <repo> fetch --prune
+   bash "<skill-dir>/scripts/worktree-pane.sh" --stale
+   ```
+   Output is a header line + one row per worktree:
+   `status<TAB>path<TAB>branch<TAB>last-commit<TAB>clean|dirty`, where status is:
+   - **completed** — merged into an integration branch or upstream gone. Safe
+     deletion candidate.
+   - **active** — recent, unmerged. Leave it.
+   - **gray** — unmerged but old. **Could be on-hold or abandoned — only the
+     user knows.** Never auto-delete; show it and let them decide.
+2. Present the rows as a **table** (not a radio — there can be >4; principle of
+   "many options → table"). Label status clearly and flag `dirty` ones. Suggest
+   the `completed` ones as removal candidates; list `gray` separately as "your
+   call".
+3. The user picks which to delete (by name/number, or "all completed").
+4. **Confirm the final delete list once more** (2-step: pick, then confirm), then
+   remove each with `--remove` (which keeps the branch, closes the pane, prunes,
+   and guards dirty ones — re-run with `--force` only on explicit confirmation):
+   ```bash
+   bash "<skill-dir>/scripts/worktree-pane.sh" --remove <path-or-ticket>
+   ```
+   Never delete `gray`/`active` without the user explicitly choosing them.
+
 ## Normal invocation
 
 First run the **"Choosing where to open"** flow above (unless the user already

@@ -133,6 +133,7 @@ worktree-pane --remove <ticket-or-path> [--force]   # remove worktree + close pa
 | `--agent <a>` | what to run in the pane: `auto` / `none` / a command |
 | `-y`, `--create-new` | allow creating a new branch without prompting |
 | `--list` `[--all]` | print worktrees (skips temp ones unless `--all`) |
+| `--stale` `[--base <b>]` | classify worktrees `completed`/`active`/`gray` (read-only) for cleanup; delete chosen ones with `--remove` |
 | `--remove` / `--rm` `[--force]` | remove a worktree + close its pane (keeps the branch) |
 | `--close` | **not** a remove alias — refuses (non-destructive); close panes via your multiplexer |
 

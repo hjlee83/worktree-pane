@@ -32,6 +32,7 @@ name=""
 branch=""
 create_new=0   # set by -y/--create-new to allow creating a brand-new branch non-interactively
 list_mode=0    # set by --list
+stale_mode=0   # set by --stale/--cleanup (classify worktrees: completed/active/gray)
 all=0          # set by --all (include temporary/agent worktrees in --list)
 remove_mode=0  # set by --remove/--rm
 force=0        # set by --force (remove a dirty worktree without asking)
@@ -47,7 +48,14 @@ Usage:
                 [--agent auto|none|<command>] [-y|--create-new]
   worktree-pane /abs/path/to/worktree       # bare-path mode
   worktree-pane --list [--all]              # list worktrees (TAB: path<TAB>branch)
+  worktree-pane --stale [--base <branch>]   # classify worktrees: completed/active/gray
   worktree-pane --remove <ticket-or-path> [--force]   # remove a worktree + close its pane
+
+--stale classifies each worktree (read-only, no deletion) as completed (merged
+into an integration branch or upstream gone), active, or gray (unmerged but
+older than WORKTREE_PANE_STALE_DAYS, default 14). Output: a header line plus one
+"status<TAB>path<TAB>branch<TAB>last-commit<TAB>clean|dirty" row each. Run
+`git fetch --prune` first for accuracy. Delete chosen ones with --remove.
 
 --remove (alias --rm) deletes the worktree directory and closes its pane,
 keeping the branch. If the worktree has uncommitted changes it stops
@@ -87,6 +95,7 @@ while [ $# -gt 0 ]; do
     --agent)  agent="$2";  shift 2 ;;
     -y|--create-new) create_new=1; shift ;;
     --list|--ls) list_mode=1; shift ;;
+    --stale|--cleanup) stale_mode=1; shift ;;
     --remove|--rm) remove_mode=1; shift ;;
     --close)
       # 'close' is non-destructive elsewhere (close a pane / drop attention), so
@@ -120,6 +129,49 @@ do_list() {
 }
 
 if [ "$list_mode" -eq 1 ]; then do_list; exit 0; fi
+
+# ---------- stale mode (read-only classifier; deletion is left to --remove) ----------
+# Classifies each worktree as completed / active / gray so the caller can show a
+# table and let the user pick what to delete (per the "many options -> table"
+# rule). Touches nothing. "completed" = merged into an integration branch OR its
+# upstream is gone (covers squash/rebase teams). "gray" = unmerged but its last
+# commit is older than the threshold (could be on-hold OR abandoned — only a
+# human can tell, so never auto-delete). Run `git fetch --prune` first for
+# accuracy (done by the caller, not here — this stays side-effect-free).
+do_stale() {
+  local repo now threshold refs ref merged gone epoch rel age dirty status
+  repo=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "worktree-pane: not a git repo" >&2; exit 1; }
+  now=$(date +%s)
+  threshold="${WORKTREE_PANE_STALE_DAYS:-14}"
+  refs=""
+  for b in "$base" develop master main \
+           "$(git -C "$repo" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')"; do
+    [ -n "$b" ] || continue
+    if git -C "$repo" rev-parse --verify --quiet "refs/remotes/origin/$b" >/dev/null; then
+      case " $refs " in *" origin/$b "*) ;; *) refs="$refs origin/$b" ;; esac
+    fi
+  done
+  echo "WORKTREE_PANE_STALE base_refs='${refs# }' threshold_days='$threshold'"
+  do_list | while IFS="$(printf '\t')" read -r path branch; do
+    [ -n "$path" ] || continue
+    merged=0
+    for ref in $refs; do
+      if git -C "$repo" merge-base --is-ancestor "refs/heads/$branch" "$ref" 2>/dev/null; then merged=1; break; fi
+    done
+    gone=$(git -C "$repo" for-each-ref --format='%(upstream:track)' "refs/heads/$branch" 2>/dev/null || true)
+    case "$gone" in *gone*) merged=1 ;; esac
+    epoch=$(git -C "$path" log -1 --format=%ct 2>/dev/null || echo "$now")
+    rel=$(git -C "$path" log -1 --format=%cr 2>/dev/null || echo "unknown")
+    age=$(( (now - epoch) / 86400 ))
+    if [ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]; then dirty=dirty; else dirty=clean; fi
+    if [ "$merged" -eq 1 ]; then status=completed
+    elif [ "$age" -ge "$threshold" ]; then status=gray
+    else status=active; fi
+    printf '%s\t%s\t%s\t%s\t%s\n' "$status" "$path" "$branch" "$rel" "$dirty"
+  done
+}
+
+if [ "$stale_mode" -eq 1 ]; then do_stale; exit 0; fi
 
 [ -n "$name" ] || { usage; exit 1; }
 
